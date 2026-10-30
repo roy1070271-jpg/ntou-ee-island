@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>海洋大學電機系 — 學程島嶼</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --ocean-deep: #0a1628;
+    --ocean-mid: #0f2847;
+    --ocean-light: #1a4a7a;
+    --island-green: #4caf50;
+    --island-dark: #2e7d32;
+    --sand: #f5e6c8;
+    --coral: #ff6b6b;
+    --sunset: #ff9a56;
+    --sky-blue: #64b5f6;
+    --gold: #ffd54f;
+    --purple: #ab47bc;
+    --teal: #26a69a;
+    --pink: #ec407a;
+  }
+
+  body {
+    font-family: 'Noto Sans TC', sans-serif;
+    background: var(--ocean-deep);
+    overflow: hidden;
+    cursor: grab;
+    user-select: none;
+  }
+  body:active { cursor: grabbing; }
+
+  #app {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Ocean background */
+  #ocean {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(180deg, #0a1e3d 0%, #0f2847 30%, #1a4a7a 70%, #2196f3 100%);
+    z-index: 0;
+  }
+
+  /* Stars */
+  .star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle 3s ease-in-out infinite;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+
+  /* Animated waves */
+  .wave {
+    position: absolute;
+    bottom: 0;
+    width: 200%;
+    height: 100px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 100'%3E%3Cpath fill='%231565c0' fill-opacity='0.3' d='M0,40 C320,80 480,0 720,40 C960,80 1120,0 1440,40 L1440,100 L0,100 Z'/%3E%3C/svg%3E") repeat-x;
+    animation: waveMove 8s linear infinite;
+    z-index: 1;
+  }
+  .wave:nth-child(2) {
+    bottom: 10px;
+    animation-delay: -4s;
+    animation-duration: 12s;
+    opacity: 0.5;
+  }
+  @keyframes waveMove {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* Main canvas area */
+  #world {
+    position: absolute;
+    width: 4000px;
+    height: 3000px;
+    z-index: 2;
+    transition: transform 0.1s ease-out;
+  }
+
+  /* Island base */
+  .island {
+    position: absolute;
+    cursor: pointer;
+    transition: transform 0.3s ease, filter 0.3s ease;
+    filter: drop-shadow(0 20px 40px rgba(0,0,0,0.4));
+  }
+  .island:hover {
+    transform: translateY(-8px) scale(1.03);
+    filter: drop-shadow(0 30px 50px rgba(0,0,0,0.5));
+    z-index: 100;
+  }
+
+  .island-body {
+    position: relative;
+  }
+
+  .island-terrain {
+    clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+    width: 260px;
+    height: 240px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .island-base {
+    position: absolute;
+    bottom: -20px;
+    left: 10%;
+    width: 80%;
+    height: 60px;
+    clip-path: polygon(0% 0%, 100% 0%, 85% 100%, 15% 100%);
+    background: linear-gradient(180deg, #5d4037 0%, #3e2723 100%);
+  }
+
+  .island-label {
+    position: absolute;
+    bottom: -55px;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    font-weight: 700;
+    font-size: 16px;
+    color: white;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(4px);
+  }
+
+  /* Characters */
+  .character {
+    position: absolute;
+    z-index: 50;
+    transition: all 0.5s ease;
+  }
+
+  .student {
+    width: 28px;
+    height: 44px;
+    animation: bounce 2s ease-in-out infinite;
+  }
+  .student:nth-child(odd) { animation-delay: -0.5s; }
+  .student:nth-child(3n) { animation-delay: -1s; }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  .chairman {
+    width: 50px;
+    height: 70px;
+    animation: chairmanWave 3s ease-in-out infinite;
+    z-index: 60;
+    cursor: pointer;
+  }
+  @keyframes chairmanWave {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(3deg); }
+    75% { transform: rotate(-3deg); }
+  }
+
+  /* Floating clouds */
+  .cloud {
+    position: absolute;
+    z-index: 3;
+    opacity: 0.6;
+    animation: floatCloud linear infinite;
+  }
+  @keyframes floatCloud {
+    0% { transform: translateX(-300px); }
+    100% { transform: translateX(calc(100vw + 300px)); }
+  }
+
+  /* Info panel */
+  #info-panel {
+    position: fixed;
+    right: -500px;
+    top: 0;
+    width: 460px;
+    height: 100vh;
+    background: linear-gradient(135deg, rgba(15,40,71,0.97), rgba(10,22,40,0.98));
+    backdrop-filter: blur(20px);
+    z-index: 1000;
+    transition: right 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    border-left: 2px solid rgba(100,181,246,0.3);
+    overflow-y: auto;
+    padding: 30px;
+  }
+  #info-panel.open { right: 0; }
+
+  #info-panel .close-btn {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.6);
+    font-size: 28px;
+    cursor: pointer;
+    transition: color 0.2s;
+    z-index: 1001;
+  }
+  #info-panel .close-btn:hover { color: white; }
+
+  #info-panel h2 {
+    font-size: 24px;
+    font-weight: 900;
+    margin-bottom: 8px;
+    background: linear-gradient(90deg, var(--sky-blue), var(--gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  #info-panel .subtitle {
+    color: rgba(255,255,255,0.5);
+    font-size: 13px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 15px;
+  }
+
+  .course-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    transition: all 0.2s;
+    cursor: default;
+  }
+  .course-card:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(100,181,246,0.4);
+    transform: translateX(4px);
+  }
+  .course-card .course-name {
+    font-weight: 700;
+    color: white;
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+  .course-card .course-info {
+    color: rgba(255,255,255,0.5);
+    font-size: 12px;
+  }
+  .course-card .course-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+    margin-right: 4px;
+    margin-top: 6px;
+  }
+
+  /* Chairman dialog */
+  #chairman-dialog {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: linear-gradient(135deg, rgba(15,40,71,0.96), rgba(10,22,40,0.98));
+    backdrop-filter: blur(20px);
+    border: 2px solid rgba(255,213,79,0.4);
+    border-radius: 20px;
+    padding: 20px 30px;
+    color: white;
+    z-index: 999;
+    max-width: 700px;
+    min-width: 400px;
+    opacity: 0;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  #chairman-dialog.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+  #chairman-dialog .dialog-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  #chairman-dialog .dialog-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold), var(--sunset));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+  #chairman-dialog .dialog-name {
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--gold);
+  }
+  #chairman-dialog .dialog-role {
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+  }
+  #chairman-dialog .dialog-text {
+    font-size: 15px;
+    line-height: 1.7;
+    color: rgba(255,255,255,0.9);
+  }
+  #chairman-dialog .dialog-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.4);
+    font-size: 20px;
+    cursor: pointer;
+  }
+
+  /* Navigation HUD */
+  #nav-hud {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 500;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .nav-btn {
+    background: rgba(15, 40, 71, 0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(100,181,246,0.3);
+    border-radius: 12px;
+    color: white;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-family: 'Noto Sans TC', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+  }
+  .nav-btn:hover {
+    background: rgba(33,150,243,0.3);
+    border-color: rgba(100,181,246,0.6);
+    transform: translateX(4px);
+  }
+  .nav-btn.active {
+    background: rgba(33,150,243,0.4);
+    border-color: var(--sky-blue);
+  }
+
+  /* Title banner */
+  #title-banner {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 500;
+    text-align: center;
+    pointer-events: none;
+  }
+  #title-banner h1 {
+    font-size: 28px;
+    font-weight: 900;
+    color: white;
+    text-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    letter-spacing: 3px;
+  }
+  #title-banner .subtitle {
+    font-size: 14px;
+    color: rgba(255,255,255,0.6);
+    margin-top: 4px;
+  }
+
+  /* Minimap */
+  #minimap {
+    position: fixed;
+    top: 90px;
+    right: 20px;
+    width: 200px;
+    height: 150px;
+    background: rgba(10,22,40,0.8);
+    border: 1px solid rgba(100,181,246,0.3);
+    border-radius: 12px;
+    z-index: 500;
+    overflow: hidden;
+  }
+  #minimap-viewport {
+    position: absolute;
+    border: 2px solid var(--gold);
+    border-radius: 3px;
+    background: rgba(255,213,79,0.1);
+    pointer-events: none;
+  }
+  .minimap-dot {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+
+  /* Connection lines */
+  #connections {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* Day/Night toggle */
+  #day-night-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 500;
+    background: rgba(15,40,71,0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(100,181,246,0.3);
+    border-radius: 30px;
+    padding: 8px 16px;
+    color: white;
+    font-family: 'Noto Sans TC', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  #day-night-toggle:hover {
+    border-color: var(--gold);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    #info-panel { width: 100%; }
+    #minimap { display: none; }
+    #title-banner h1 { font-size: 20px; }
+  }
+
+  /* Particle fish */
+  .fish {
+    position: absolute;
+    z-index: 1;
+    animation: swim linear infinite;
+    opacity: 0.4;
+  }
+  @keyframes swim {
+    0% { transform: translateX(-50px); }
+    100% { transform: translateX(calc(100vw + 50px)); }
+  }
+
+  /* Loading screen */
+  #loading {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: var(--ocean-deep);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 1s;
+  }
+  #loading.fade-out { opacity: 0; pointer-events: none; }
+  #loading h1 {
+    color: white;
+    font-size: 32px;
+    font-weight: 900;
+    margin-bottom: 20px;
+    letter-spacing: 4px;
+  }
+  .loading-wave {
+    display: flex;
+    gap: 6px;
+  }
+  .loading-wave span {
+    width: 8px;
+    height: 8px;
+    background: var(--sky-blue);
+    border-radius: 50%;
+    animation: loadBounce 1.2s ease-in-out infinite;
+  }
+  .loading-wave span:nth-child(2) { animation-delay: 0.2s; }
+  .loading-wave span:nth-child(3) { animation-delay: 0.4s; }
+  .loading-wave span:nth-child(4) { animation-delay: 0.6s; }
+  @keyframes loadBounce {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+  }
+
+  /* Tooltip */
+  .tooltip {
+    position: absolute;
+    background: rgba(0,0,0,0.85);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 200;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+</style>
+</head>
+<body>
+
+<!-- Loading Screen -->
+<div id="loading">
+  <h1>🏝️ 電機學程島嶼</h1>
+  <p style="color:rgba(255,255,255,0.5); margin-bottom:20px; font-size:14px;">國立臺灣海洋大學 電機工程學系</p>
+  <div class="loading-wave">
+    <span></span><span></span><span></span><span></span>
+  </div>
+</div>
+
+<!-- Title -->
+<div id="title-banner">
+  <h1>🏝️ 海大電機 — 學程島嶼</h1>
+  <div class="subtitle">National Taiwan Ocean University — EE Curriculum Island</div>
+</div>
+
+<!-- Day/Night Toggle -->
+<button id="day-night-toggle" onclick="toggleDayNight()">
+  <span id="dn-icon">🌙</span> <span id="dn-text">夜景模式</span>
+</button>
+
+<!-- Navigation -->
+<div id="nav-hud">
+  <button class="nav-btn" onclick="flyTo('center')" title="總覽">🗺️ 總覽全島</button>
+  <button class="nav-btn" onclick="flyTo('freshman')" title="大一">📘 大一課程</button>
+  <button class="nav-btn" onclick="flyTo('sophomore')" title="大二">📗 大二課程</button>
+  <button class="nav-btn" onclick="flyTo('junior')" title="大三">📙 大三課程</button>
+  <button class="nav-btn" onclick="flyTo('senior')" title="大四">📕 大四學程</button>
+  <button class="nav-btn" onclick="flyTo('chairman')" title="系主任">👨‍🏫 找系主任</button>
+</div>
+
+<!-- Minimap -->
+<div id="minimap">
+  <div id="minimap-viewport"></div>
+</div>
+
+<!-- Main app -->
+<div id="app">
+  <div id="ocean">
+    <div class="wave"></div>
+    <div class="wave"></div>
+  </div>
+  <div id="world">
+    <svg id="connections" width="4000" height="3000"></svg>
+  </div>
+</div>
+
+<!-- Info Panel -->
+<div id="info-panel">
+  <button class="close-btn" onclick="closePanel()">✕</button>
+  <div id="panel-content"></div>
+</div>
+
+<!-- Chairman Dialog -->
+<div id="chairman-dialog">
+  <button class="dialog-close" onclick="closeDialog()">✕</button>
+  <div class="dialog-header">
+    <div class="dialog-avatar">👨‍🏫</div>
+    <div>
+      <div class="dialog-name">系主任</div>
+      <div class="dialog-role">海洋大學電機工程學系</div>
+    </div>
+  </div>
+  <div class="dialog-text" id="dialog-text"></div>
+</div>
+
+<script>
+// ===================== DATA =====================
+const islandData = {
+  // ---- 大一 ----
+  common: {
+    id: 'common',
+    name: '🏛️ 共同課程島',
+    year: '大一',
+    color: '#5c6bc0',
+    gradient: 'linear-gradient(135deg, #3949ab, #5c6bc0, #7986cb)',
+    x: 600, y: 400,
+    courses: [
+      { name: '國文', semester: '上', type: '必修', credits: 2 },
+      { name: '外文', semester: '上下', type: '必修', credits: 4 },
+      { name: '憲政領域', semester: '上', type: '必修', credits: 2 },
+      { name: '歷史領域', semester: '下', type: '必修', credits: 2 },
+      { name: '博雅領域', semester: '上下', type: '必修', credits: 4 },
+      { name: '體育', semester: '上下', type: '必修', credits: 0 },
+      { name: '勞動服務', semester: '上下', type: '必修', credits: 0 },
+    ],
+    description: '人文社會與通識教育的基石，培養電機人的全方位素養。',
+    chairmanSays: '大一同學們歡迎加入電機系大家庭！共同課程看似與電機無關，但語文能力、人文素養、法治觀念都是未來工程師不可或缺的基礎喔！'
+  },
+  core_math: {
+    id: 'core_math',
+    name: '📐 數理核心島',
+    year: '大一',
+    color: '#26a69a',
+    gradient: 'linear-gradient(135deg, #00897b, #26a69a, #4db6ac)',
+    x: 1000, y: 300,
+    courses: [
+      { name: '微積分', semester: '上下', type: '必修', credits: 6 },
+      { name: '普通物理', semester: '上下', type: '必修', credits: 6 },
+      { name: '普通物理實驗', semester: '上下', type: '必修', credits: 2 },
+    ],
+    description: '微積分與物理學是所有工程課程的根基，大一打好基礎至關重要。',
+    chairmanSays: '微積分和物理是所有電機課程的根基！大一把這些基礎打穩，後面的電路學、電磁學才能游刃有餘。記得多練習、多問問題！'
+  },
+  cs_intro: {
+    id: 'cs_intro',
+    name: '💻 資訊入門島',
+    year: '大一',
+    color: '#42a5f5',
+    gradient: 'linear-gradient(135deg, #1e88e5, #42a5f5, #64b5f6)',
+    x: 1450, y: 500,
+    courses: [
+      { name: '計算機概論', semester: '上', type: '必修', credits: 3 },
+      { name: '計算機實習', semester: '上', type: '必修', credits: 1 },
+      { name: '程式語言', semester: '下', type: '必修', credits: 3 },
+    ],
+    description: '從零開始學習計算機科學基礎，建立程式設計能力。',
+    chairmanSays: '程式能力在現代電機領域已經是標配！不管你未來走硬體、通訊還是控制，都需要寫程式。大一好好學習C語言，這是你們的第一把武器！'
+  },
+
+  // ---- 大二 ----
+  circuit: {
+    id: 'circuit',
+    name: '⚡ 電路電子島',
+    year: '大二',
+    color: '#ef5350',
+    gradient: 'linear-gradient(135deg, #e53935, #ef5350, #ef9a9a)',
+    x: 800, y: 900,
+    courses: [
+      { name: '電路學', semester: '上下', type: '必修', credits: 6 },
+      { name: '電子學', semester: '上下', type: '必修', credits: 6 },
+      { name: '電工實驗', semester: '上下', type: '必修', credits: 2 },
+    ],
+    description: '電路學與電子學是電機系的靈魂課程，從基本元件到電路分析全面掌握。',
+    chairmanSays: '電路學和電子學是我們電機系最核心的兩門課！這兩門課學好了，後面的電力、通訊、控制各組課程就像打通了任督二脈一樣順暢！'
+  },
+  math_adv: {
+    id: 'math_adv',
+    name: '🔢 進階數學島',
+    year: '大二',
+    color: '#7e57c2',
+    gradient: 'linear-gradient(135deg, #5e35b1, #7e57c2, #9575cd)',
+    x: 1350, y: 850,
+    courses: [
+      { name: '工程數學', semester: '上下', type: '必修', credits: 6 },
+      { name: '線性代數', semester: '上', type: '必修', credits: 3 },
+      { name: '交換電路與邏輯設計', semester: '下', type: '必修', credits: 3 },
+    ],
+    description: '工程數學與線性代數為進階電機理論提供堅實的數學工具。',
+    chairmanSays: '工程數學看起來很可怕，但它其實是幫你把大一的微積分「升級」成解決工程問題的利器！拉普拉斯轉換、傅立葉分析，這些都會在未來的訊號處理和控制理論中大量使用！'
+  },
+  em: {
+    id: 'em',
+    name: '🧲 電磁學島',
+    year: '大二',
+    color: '#ff7043',
+    gradient: 'linear-gradient(135deg, #f4511e, #ff7043, #ff8a65)',
+    x: 1800, y: 750,
+    courses: [
+      { name: '電磁學', semester: '上下', type: '必修', credits: 6 },
+    ],
+    description: '研究電場、磁場與電磁波的基礎理論，是通訊與電波領域的基石。',
+    chairmanSays: '電磁學連結了物理與電機的世界！馬克斯威爾方程式是整個電磁理論的核心，學好它你就能理解從手機天線到光纖通訊的所有原理！'
+  },
+
+  // ---- 大三 ----
+  signal: {
+    id: 'signal',
+    name: '📡 訊號系統島',
+    year: '大三',
+    color: '#26c6da',
+    gradient: 'linear-gradient(135deg, #00acc1, #26c6da, #4dd0e1)',
+    x: 500, y: 1400,
+    courses: [
+      { name: '訊號與系統', semester: '上', type: '必修', credits: 3 },
+      { name: '電磁波', semester: '上', type: '必修', credits: 3 },
+      { name: '機率學', semester: '上', type: '必修', credits: 3 },
+      { name: '電工實驗', semester: '上下', type: '必修', credits: 2 },
+    ],
+    description: '訊號處理、機率統計與電磁波理論，通往通訊與控制領域的必經之路。',
+    chairmanSays: '大三是專業分化的起點！訊號與系統這門課會教你如何用數學分析真實世界的訊號，從音訊處理到影像辨識都用得上。機率學則是AI和通訊的重要基礎！'
+  },
+  elective6: {
+    id: 'elective6',
+    name: '🎯 六選必修島',
+    year: '大三大四',
+    color: '#ffa726',
+    gradient: 'linear-gradient(135deg, #fb8c00, #ffa726, #ffb74d)',
+    x: 1100, y: 1500,
+    courses: [
+      { name: '半導體物理', semester: '上', type: '六選必', credits: 3 },
+      { name: '通訊工程', semester: '上', type: '六選必', credits: 3 },
+      { name: '自動控制', semester: '上', type: '六選必', credits: 3 },
+      { name: '電機機械', semester: '上', type: '六選必', credits: 3 },
+      { name: '複變函數', semester: '下', type: '六選必', credits: 3 },
+      { name: '資料結構', semester: '下', type: '六選必', credits: 3 },
+    ],
+    description: '六大專業選修中必選三至四門，決定你未來的專業走向！',
+    chairmanSays: '這是最重要的選擇時刻！六選必修課程對應我們系上六大學程方向，你的選擇會決定未來的專長。建議多了解各領域的發展前景，也可以來找我或各組老師聊聊！'
+  },
+
+  // ---- 大四/學程方向 ----
+  power: {
+    id: 'power',
+    name: '🔌 電力電子學程',
+    year: '學程',
+    color: '#ec407a',
+    gradient: 'linear-gradient(135deg, #d81b60, #ec407a, #f06292)',
+    x: 300, y: 2100,
+    courses: [
+      { name: '電力與電子電路組', semester: '', type: '學程', credits: 0 },
+      { name: '電機機械（進階）', semester: '', type: '選修', credits: 3 },
+      { name: '電力電子學', semester: '', type: '選修', credits: 3 },
+      { name: '電力系統', semester: '', type: '選修', credits: 3 },
+    ],
+    description: '專注於電力系統、電力電子與電機機械，培養電力工程專業人才。',
+    chairmanSays: '電力電子學程是台灣最有就業優勢的領域之一！從台電、半導體廠的電力系統，到電動車的馬達控制，都需要這方面的人才。而且綠能產業蓬勃發展，前景非常看好！'
+  },
+  control: {
+    id: 'control',
+    name: '🤖 控制學程',
+    year: '學程',
+    color: '#ab47bc',
+    gradient: 'linear-gradient(135deg, #8e24aa, #ab47bc, #ba68c8)',
+    x: 800, y: 2200,
+    courses: [
+      { name: '控制組', semester: '', type: '學程', credits: 0 },
+      { name: '自動控制（進階）', semester: '', type: '選修', credits: 3 },
+      { name: '數位控制', semester: '', type: '選修', credits: 3 },
+      { name: '機器人學', semester: '', type: '選修', credits: 3 },
+    ],
+    description: '從PID控制到現代控制理論，掌握自動化與機器人技術。',
+    chairmanSays: '控制學程結合了數學與工程的精華！從工廠自動化、無人機到自駕車，控制理論無處不在。近年來強化學習和AI控制也是熱門研究方向！'
+  },
+  comm: {
+    id: 'comm',
+    name: '📶 通訊學程',
+    year: '學程',
+    color: '#29b6f6',
+    gradient: 'linear-gradient(135deg, #0288d1, #29b6f6, #4fc3f7)',
+    x: 1300, y: 2100,
+    courses: [
+      { name: '通訊與訊號處理組', semester: '', type: '學程', credits: 0 },
+      { name: '通訊工程（進階）', semester: '', type: '選修', credits: 3 },
+      { name: '數位訊號處理', semester: '', type: '選修', credits: 3 },
+      { name: '無線通訊', semester: '', type: '選修', credits: 3 },
+    ],
+    description: '5G/6G通訊、訊號處理與數位通訊系統的專業養成。',
+    chairmanSays: '通訊學程直接對接台灣ICT產業的核心需求！5G/6G、衛星通訊、物聯網…通訊工程師在業界非常搶手。我們系上的通訊實驗室設備也很完善！'
+  },
+  wave: {
+    id: 'wave',
+    name: '📡 電波學程',
+    year: '學程',
+    color: '#66bb6a',
+    gradient: 'linear-gradient(135deg, #43a047, #66bb6a, #81c784)',
+    x: 1800, y: 2200,
+    courses: [
+      { name: '電波組', semester: '', type: '學程', credits: 0 },
+      { name: '天線工程', semester: '', type: '選修', credits: 3 },
+      { name: '微波工程', semester: '', type: '選修', credits: 3 },
+      { name: '電磁相容', semester: '', type: '選修', credits: 3 },
+    ],
+    description: '天線設計、微波工程與電磁相容，探索看不見的電磁世界。',
+    chairmanSays: '電波領域是電機系最酷的方向之一！從5G基地台天線、衛星雷達到醫療成像，都是電波工程的應用範疇。海大靠海的地理優勢，在海洋雷達和海事通訊方面更有獨特的研究機會！'
+  },
+  solid: {
+    id: 'solid',
+    name: '💎 固態電子學程',
+    year: '學程',
+    color: '#78909c',
+    gradient: 'linear-gradient(135deg, #546e7a, #78909c, #90a4ae)',
+    x: 2300, y: 2100,
+    courses: [
+      { name: '固態電子組', semester: '', type: '學程', credits: 0 },
+      { name: '半導體物理（進階）', semester: '', type: '選修', credits: 3 },
+      { name: '半導體元件', semester: '', type: '選修', credits: 3 },
+      { name: '近代物理', semester: '', type: '選修', credits: 3 },
+      { name: '積體電路設計', semester: '', type: '選修', credits: 3 },
+    ],
+    description: '半導體物理與元件、IC設計，對接台灣半導體產業鏈。',
+    chairmanSays: '台灣半導體產業舉世聞名，而我們固態電子學程正是培養這方面人才的搖籃！從台積電到聯發科，都需要懂半導體物理和IC設計的工程師。選這條路，就業完全不用擔心！'
+  },
+  infotech: {
+    id: 'infotech',
+    name: '🖥️ 資訊科技學程',
+    year: '學程',
+    color: '#5c6bc0',
+    gradient: 'linear-gradient(135deg, #3f51b5, #5c6bc0, #7986cb)',
+    x: 2700, y: 2000,
+    courses: [
+      { name: '資訊科技組', semester: '', type: '學程', credits: 0 },
+      { name: '資料結構（進階）', semester: '', type: '選修', credits: 3 },
+      { name: '演算法', semester: '', type: '選修', credits: 3 },
+      { name: '人工智慧', semester: '', type: '選修', credits: 3 },
+      { name: '機器學習', semester: '', type: '選修', credits: 3 },
+    ],
+    description: '軟體開發、AI人工智慧與資料科學，迎接數位轉型浪潮。',
+    chairmanSays: '資訊科技是現在最火紅的領域！AI、深度學習、大數據…幾乎所有產業都在搶這方面的人才。我們電機系的學生有紮實的數學和硬體基礎，學AI更有優勢！'
+  }
+};
+
+// Connection lines between islands
+const connections = [
+  ['common', 'core_math'],
+  ['common', 'cs_intro'],
+  ['core_math', 'circuit'],
+  ['core_math', 'math_adv'],
+  ['core_math', 'em'],
+  ['cs_intro', 'math_adv'],
+  ['circuit', 'signal'],
+  ['circuit', 'elective6'],
+  ['math_adv', 'signal'],
+  ['math_adv', 'elective6'],
+  ['em', 'signal'],
+  ['signal', 'elective6'],
+  ['elective6', 'power'],
+  ['elective6', 'control'],
+  ['elective6', 'comm'],
+  ['elective6', 'wave'],
+  ['elective6', 'solid'],
+  ['elective6', 'infotech'],
+  ['signal', 'comm'],
+  ['signal', 'control'],
+  ['em', 'wave'],
+  ['circuit', 'power'],
+  ['cs_intro', 'infotech'],
+];
+
+// ===================== STATE =====================
+let worldX = -800, worldY = -200;
+let isDragging = false;
+let dragStartX, dragStartY;
+let isNight = true;
+let currentScale = 1;
+
+// ===================== INIT =====================
+window.addEventListener('load', () => {
+  createStars();
+  createIslands();
+  createConnections();
+  createCharacters();
+  createClouds();
+  updateWorld();
+  updateMinimap();
+
+  setTimeout(() => {
+    document.getElementById('loading').classList.add('fade-out');
+    setTimeout(() => showChairmanDialog('歡迎來到海洋大學電機系學程島嶼！🏝️ 我是你們的系主任。在這裡，每座島嶼代表一個課程階段或學程方向。點擊島嶼了解課程詳情，或點左側導航列快速前往各年級課程。\n\n一起來探索你的電機之旅吧！'), 500);
+  }, 2000);
+});
+
+// ===================== DRAG/PAN =====================
+const app = document.getElementById('app');
+
+app.addEventListener('mousedown', (e) => {
+  if (e.target.closest('.island') || e.target.closest('.chairman') || e.target.closest('#nav-hud') || e.target.closest('#info-panel') || e.target.closest('#chairman-dialog') || e.target.closest('#day-night-toggle') || e.target.closest('#minimap')) return;
+  isDragging = true;
+  dragStartX = e.clientX - worldX;
+  dragStartY = e.clientY - worldY;
+});
+
+app.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  worldX = e.clientX - dragStartX;
+  worldY = e.clientY - dragStartY;
+  updateWorld();
+  updateMinimap();
+});
+
+app.addEventListener('mouseup', () => { isDragging = false; });
+app.addEventListener('mouseleave', () => { isDragging = false; });
+
+// Touch support
+app.addEventListener('touchstart', (e) => {
+  if (e.target.closest('.island') || e.target.closest('.chairman')) return;
+  isDragging = true;
+  dragStartX = e.touches[0].clientX - worldX;
+  dragStartY = e.touches[0].clientY - worldY;
+});
+app.addEventListener('touchmove', (e) => {
+  if (!isDragging) return;
+  e.preventDefault();
+  worldX = e.touches[0].clientX - dragStartX;
+  worldY = e.touches[0].clientY - dragStartY;
+  updateWorld();
+  updateMinimap();
+}, { passive: false });
+app.addEventListener('touchend', () => { isDragging = false; });
+
+// Zoom
+app.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? -0.05 : 0.05;
+  currentScale = Math.max(0.4, Math.min(1.5, currentScale + delta));
+  updateWorld();
+  updateMinimap();
+}, { passive: false });
+
+function updateWorld() {
+  const world = document.getElementById('world');
+  world.style.transform = `translate(${worldX}px, ${worldY}px) scale(${currentScale})`;
+}
+
+// ===================== STARS =====================
+function createStars() {
+  const ocean = document.getElementById('ocean');
+  for (let i = 0; i < 120; i++) {
+    const star = document.createElement('div');
+    star.className = 'star';
+    star.style.left = Math.random() * 100 + '%';
+    star.style.top = Math.random() * 50 + '%';
+    const size = Math.random() * 3 + 1;
+    star.style.width = size + 'px';
+    star.style.height = size + 'px';
+    star.style.animationDelay = Math.random() * 3 + 's';
+    star.style.animationDuration = (Math.random() * 3 + 2) + 's';
+    ocean.appendChild(star);
+  }
+}
+
+// ===================== ISLANDS =====================
+function createIslands() {
+  const world = document.getElementById('world');
+
+  Object.values(islandData).forEach(island => {
+    const el = document.createElement('div');
+    el.className = 'island';
+    el.id = 'island-' + island.id;
+    el.style.left = island.x + 'px';
+    el.style.top = island.y + 'px';
+
+    // Build island with trees, buildings
+    const deco = getIslandDecoration(island);
+
+    el.innerHTML = `
+      <div class="island-body">
+        <div class="island-terrain" style="background: ${island.gradient};">
+          ${deco}
+        </div>
+        <div class="island-base"></div>
+        <div class="island-label">${island.name}</div>
+      </div>
+    `;
+
+    el.addEventListener('click', () => openIslandPanel(island));
+    world.appendChild(el);
+  });
+}
+
+function getIslandDecoration(island) {
+  const decos = [];
+  // Add tiny buildings/trees based on island type
+  const types = {
+    common: ['🏛️', '📚', '🏫'],
+    core_math: ['📐', '🔬', '📊'],
+    cs_intro: ['💻', '⌨️', '🖥️'],
+    circuit: ['⚡', '🔋', '📟'],
+    math_adv: ['🔢', '∞', '📏'],
+    em: ['🧲', '⚡', '🌀'],
+    signal: ['📡', '📶', '🎛️'],
+    elective6: ['🎯', '🗺️', '🧭'],
+    power: ['🔌', '⚡', '🏭'],
+    control: ['🤖', '🦾', '🎮'],
+    comm: ['📶', '📱', '🛰️'],
+    wave: ['📡', '🌊', '📻'],
+    solid: ['💎', '🔬', '💡'],
+    infotech: ['🖥️', '🤖', '🧠'],
+  };
+  const icons = types[island.id] || ['🏠'];
+  icons.forEach((icon, i) => {
+    const left = 25 + i * 30 + Math.random() * 15;
+    const top = 30 + Math.random() * 40;
+    decos.push(`<div style="position:absolute;left:${left}%;top:${top}%;font-size:${20 + Math.random()*10}px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));transform:rotate(${Math.random()*10-5}deg);">${icon}</div>`);
+  });
+  return decos.join('');
+}
+
+// ===================== CONNECTIONS =====================
+function createConnections() {
+  const svg = document.getElementById('connections');
+  connections.forEach(([fromId, toId]) => {
+    const from = islandData[fromId];
+    const to = islandData[toId];
+    if (!from || !to) return;
+
+    const x1 = from.x + 130;
+    const y1 = from.y + 120;
+    const x2 = to.x + 130;
+    const y2 = to.y + 120;
+
+    // Curved path
+    const mx = (x1 + x2) / 2;
+    const my = (y1 + y2) / 2 - 30;
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', `M${x1},${y1} Q${mx},${my} ${x2},${y2}`);
+    path.setAttribute('stroke', 'rgba(100,181,246,0.25)');
+    path.setAttribute('stroke-width', '2');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke-dasharray', '8,4');
+
+    // Animated dash
+    const animate = document.createElementNS('http://www.w3.org/2000/svg', 'animate');
+    animate.setAttribute('attributeName', 'stroke-dashoffset');
+    animate.setAttribute('from', '0');
+    animate.setAttribute('to', '24');
+    animate.setAttribute('dur', '2s');
+    animate.setAttribute('repeatCount', 'indefinite');
+    path.appendChild(animate);
+
+    svg.appendChild(path);
+  });
+}
+
+// ===================== CHARACTERS =====================
+function createCharacters() {
+  const world = document.getElementById('world');
+
+  // Chairman - positioned near the center/elective island
+  const chairman = document.createElement('div');
+  chairman.className = 'character chairman';
+  chairman.style.left = '1160px';
+  chairman.style.top = '1380px';
+  chairman.id = 'chairman';
+  chairman.innerHTML = `
+    <svg width="50" height="70" viewBox="0 0 50 70">
+      <!-- Body -->
+      <rect x="12" y="28" width="26" height="30" rx="4" fill="#1565c0"/>
+      <!-- Head -->
+      <circle cx="25" cy="18" r="14" fill="#ffe0b2"/>
+      <!-- Hair -->
+      <path d="M12,14 Q15,4 25,6 Q35,4 38,14" fill="#3e2723"/>
+      <!-- Glasses -->
+      <circle cx="20" cy="18" r="4" fill="none" stroke="#333" stroke-width="1.5"/>
+      <circle cx="30" cy="18" r="4" fill="none" stroke="#333" stroke-width="1.5"/>
+      <line x1="24" y1="18" x2="26" y2="18" stroke="#333" stroke-width="1"/>
+      <!-- Smile -->
+      <path d="M20,22 Q25,27 30,22" fill="none" stroke="#5d4037" stroke-width="1.2"/>
+      <!-- Tie -->
+      <polygon points="25,28 22,35 25,42 28,35" fill="#ffd54f"/>
+      <!-- Arms -->
+      <line x1="12" y1="35" x2="2" y2="28" stroke="#1565c0" stroke-width="4" stroke-linecap="round">
+        <animateTransform attributeName="transform" type="rotate" values="0 12 35;-15 12 35;0 12 35" dur="2s" repeatCount="indefinite"/>
+      </line>
+      <line x1="38" y1="35" x2="48" y2="28" stroke="#1565c0" stroke-width="4" stroke-linecap="round">
+        <animateTransform attributeName="transform" type="rotate" values="0 38 35;15 38 35;0 38 35" dur="2s" repeatCount="indefinite"/>
+      </line>
+      <!-- Legs -->
+      <line x1="20" y1="58" x2="18" y2="68" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+      <line x1="30" y1="58" x2="32" y2="68" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+      <!-- Label -->
+      <text x="25" y="-3" text-anchor="middle" fill="#ffd54f" font-size="9" font-weight="bold">👨‍🏫 系主任</text>
+    </svg>
+  `;
+  chairman.addEventListener('click', () => {
+    showChairmanDialog('各位同學好！我是你們的系主任。\n\n我們電機系課程規劃以「核心必修→專業分流→學程深化」三階段設計：\n\n📘 大一：打好數理基礎與程式能力\n📗 大二：學習電路、電子、電磁學核心\n📙 大三：訊號系統與六選必修分流\n📕 大四：深入各學程方向\n\n點擊任一島嶼，我會為你詳細介紹！');
+  });
+  world.appendChild(chairman);
+
+  // Students scattered on islands
+  const studentPositions = [
+    // Freshman students (大一)
+    { x: 650, y: 360, grade: 1, color: '#4fc3f7' },
+    { x: 700, y: 420, grade: 1, color: '#4fc3f7' },
+    { x: 1050, y: 280, grade: 1, color: '#4fc3f7' },
+    { x: 1100, y: 330, grade: 1, color: '#4fc3f7' },
+    { x: 1500, y: 470, grade: 1, color: '#4fc3f7' },
+    { x: 1480, y: 530, grade: 1, color: '#4fc3f7' },
+    // Sophomore students (大二)
+    { x: 850, y: 870, grade: 2, color: '#81c784' },
+    { x: 900, y: 930, grade: 2, color: '#81c784' },
+    { x: 1400, y: 820, grade: 2, color: '#81c784' },
+    { x: 1850, y: 720, grade: 2, color: '#81c784' },
+    { x: 1830, y: 780, grade: 2, color: '#81c784' },
+    // Junior students (大三)
+    { x: 550, y: 1370, grade: 3, color: '#ffb74d' },
+    { x: 580, y: 1430, grade: 3, color: '#ffb74d' },
+    { x: 1150, y: 1470, grade: 3, color: '#ffb74d' },
+    { x: 1180, y: 1530, grade: 3, color: '#ffb74d' },
+    // Senior students (大四) - on program islands
+    { x: 350, y: 2080, grade: 4, color: '#ef9a9a' },
+    { x: 850, y: 2180, grade: 4, color: '#ef9a9a' },
+    { x: 1350, y: 2080, grade: 4, color: '#ef9a9a' },
+    { x: 1850, y: 2180, grade: 4, color: '#ef9a9a' },
+    { x: 2350, y: 2080, grade: 4, color: '#ef9a9a' },
+    { x: 2750, y: 1980, grade: 4, color: '#ef9a9a' },
+  ];
+
+  studentPositions.forEach((pos, i) => {
+    const student = document.createElement('div');
+    student.className = 'character student';
+    student.style.left = pos.x + 'px';
+    student.style.top = pos.y + 'px';
+    student.style.animationDelay = (Math.random() * 2) + 's';
+
+    const gradeLabel = ['', '大一', '大二', '大三', '大四'][pos.grade];
+    const backpackColors = ['', '#42a5f5', '#66bb6a', '#ffa726', '#ef5350'];
+
+    student.innerHTML = `
+      <svg width="28" height="44" viewBox="0 0 28 44">
+        <!-- Shadow -->
+        <ellipse cx="14" cy="42" rx="8" ry="2" fill="rgba(0,0,0,0.2)"/>
+        <!-- Body -->
+        <rect x="6" y="18" width="16" height="16" rx="3" fill="${pos.color}"/>
+        <!-- Head -->
+        <circle cx="14" cy="11" r="8" fill="#ffe0b2"/>
+        <!-- Hair -->
+        <path d="M7,8 Q10,2 14,3 Q18,2 21,8" fill="#5d4037"/>
+        <!-- Eyes -->
+        <circle cx="11" cy="11" r="1.5" fill="#333"/>
+        <circle cx="17" cy="11" r="1.5" fill="#333"/>
+        <!-- Mouth -->
+        <path d="M11,14 Q14,17 17,14" fill="none" stroke="#5d4037" stroke-width="0.8"/>
+        <!-- Backpack -->
+        <rect x="18" y="19" width="6" height="10" rx="2" fill="${backpackColors[pos.grade]}" opacity="0.7"/>
+        <!-- Legs -->
+        <line x1="10" y1="34" x2="9" y2="41" stroke="#333" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="18" y1="34" x2="19" y2="41" stroke="#333" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- Grade label -->
+        <text x="14" y="-2" text-anchor="middle" fill="${pos.color}" font-size="7" font-weight="bold">${gradeLabel}</text>
+      </svg>
+    `;
+
+    // Click student to show info
+    student.addEventListener('click', () => {
+      const messages = {
+        1: '嗨！我是大一新生～正在努力學微積分和物理呢！計算機概論也很有趣，第一次寫程式好興奮！',
+        2: '大二好忙啊！電路學和電子學是魔王課程，但學會之後很有成就感！工程數學也很燒腦...',
+        3: '大三要開始選專業方向了，六選必修好難選啊！我在考慮通訊和控制之間...',
+        4: '大四的學程課程很專精，已經可以看到自己未來的專業樣貌了！準備要考研究所或找工作囉～'
+      };
+      showChairmanDialog(`💬 ${gradeLabel}學生說：\n\n${messages[pos.grade]}`);
+    });
+    student.style.cursor = 'pointer';
+
+    world.appendChild(student);
+  });
+}
+
+// ===================== CLOUDS =====================
+function createClouds() {
+  const ocean = document.getElementById('ocean');
+  for (let i = 0; i < 5; i++) {
+    const cloud = document.createElement('div');
+    cloud.className = 'cloud';
+    cloud.style.top = (5 + Math.random() * 25) + '%';
+    cloud.style.animationDuration = (30 + Math.random() * 40) + 's';
+    cloud.style.animationDelay = (-Math.random() * 40) + 's';
+    cloud.style.fontSize = (30 + Math.random() * 20) + 'px';
+    cloud.innerHTML = '☁️';
+    ocean.appendChild(cloud);
+  }
+}
+
+// ===================== PANELS =====================
+function openIslandPanel(island) {
+  const panel = document.getElementById('info-panel');
+  const content = document.getElementById('panel-content');
+
+  const yearColors = {
+    '大一': '#42a5f5',
+    '大二': '#66bb6a',
+    '大三': '#ffa726',
+    '大三大四': '#ff7043',
+    '學程': '#ec407a',
+  };
+
+  const typeColors = {
+    '必修': 'background:rgba(239,83,80,0.3);color:#ef9a9a;',
+    '六選必': 'background:rgba(255,167,38,0.3);color:#ffcc80;',
+    '選修': 'background:rgba(102,187,106,0.3);color:#a5d6a7;',
+    '學程': 'background:rgba(171,71,188,0.3);color:#ce93d8;',
+  };
+
+  let coursesHTML = island.courses.map(c => `
+    <div class="course-card">
+      <div class="course-name">${c.name}</div>
+      <div class="course-info">
+        ${c.semester ? `📅 ${c.semester === '上' ? '上學期' : c.semester === '下' ? '下學期' : '上下學期'}` : ''}
+        ${c.credits > 0 ? ` · ${c.credits} 學分` : ''}
+      </div>
+      <span class="course-tag" style="${typeColors[c.type] || ''}">${c.type}</span>
+    </div>
+  `).join('');
+
+  content.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+      <div style="width:12px;height:12px;border-radius:50%;background:${island.color};"></div>
+      <span style="color:${yearColors[island.year] || '#fff'};font-size:13px;font-weight:600;">${island.year}</span>
+    </div>
+    <h2>${island.name}</h2>
+    <div class="subtitle">${island.description}</div>
+    
+    <div style="margin-bottom:20px;">
+      <div style="color:rgba(255,255,255,0.7);font-size:13px;font-weight:600;margin-bottom:10px;">📋 課程列表</div>
+      ${coursesHTML}
+    </div>
+
+    <div style="background:rgba(255,213,79,0.08);border:1px solid rgba(255,213,79,0.2);border-radius:12px;padding:16px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span style="font-size:20px;">👨‍🏫</span>
+        <span style="color:var(--gold);font-weight:700;font-size:14px;">系主任的話</span>
+      </div>
+      <div style="color:rgba(255,255,255,0.8);font-size:13px;line-height:1.8;">${island.chairmanSays}</div>
+    </div>
+  `;
+
+  panel.classList.add('open');
+}
+
+function closePanel() {
+  document.getElementById('info-panel').classList.remove('open');
+}
+
+// ===================== CHAIRMAN DIALOG =====================
+function showChairmanDialog(text) {
+  const dialog = document.getElementById('chairman-dialog');
+  const textEl = document.getElementById('dialog-text');
+
+  // Typewriter effect
+  dialog.classList.add('show');
+  textEl.innerHTML = '';
+  let i = 0;
+  const chars = text.split('');
+  const type = () => {
+    if (i < chars.length) {
+      textEl.innerHTML += chars[i] === '\n' ? '<br>' : chars[i];
+      i++;
+      setTimeout(type, 20);
+    }
+  };
+  type();
+
+  // Auto hide after 15 seconds
+  clearTimeout(window._dialogTimeout);
+  window._dialogTimeout = setTimeout(closeDialog, 15000);
+}
+
+function closeDialog() {
+  document.getElementById('chairman-dialog').classList.remove('show');
+  clearTimeout(window._dialogTimeout);
+}
+
+// ===================== NAVIGATION =====================
+function flyTo(target) {
+  closeDialog();
+  const positions = {
+    center: { x: -600, y: -400 },
+    freshman: { x: -300, y: -100 },
+    sophomore: { x: -500, y: -600 },
+    junior: { x: -300, y: -1100 },
+    senior: { x: -600, y: -1600 },
+    chairman: { x: -800, y: -1100 },
+  };
+
+  const pos = positions[target];
+  if (!pos) return;
+
+  // Smooth animation
+  const startX = worldX;
+  const startY = worldY;
+  const dx = pos.x - startX;
+  const dy = pos.y - startY;
+  const duration = 800;
+  const start = performance.now();
+
+  function animate(time) {
+    const t = Math.min((time - start) / duration, 1);
+    const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // easeInOut
+    worldX = startX + dx * ease;
+    worldY = startY + dy * ease;
+    updateWorld();
+    updateMinimap();
+    if (t < 1) requestAnimationFrame(animate);
+  }
+  requestAnimationFrame(animate);
+
+  // Show chairman dialog for specific views
+  const dialogMessages = {
+    freshman: '📘 歡迎來到大一課程區！這裡有三座島嶼：共同課程島、數理核心島和資訊入門島。大一最重要的是打好基礎，微積分、物理、程式語言都是未來四年的根基！',
+    sophomore: '📗 大二是承先啟後的關鍵年！電路學和電子學是我們系的招牌課程，工程數學和電磁學則提供進階的數學與物理工具。加油！',
+    junior: '📙 大三開始專業分流！訊號與系統、機率學是共同必修，六選必修則決定你的專業方向。有任何選課問題都可以來找我討論！',
+    senior: '📕 大四進入學程深化階段！我們有六大學程方向：電力電子、控制、通訊、電波、固態電子、資訊科技。每個方向都有豐富的選修課和實驗設備，好好把握！',
+    chairman: '👋 找到我啦！我就在六選必修島旁邊，隨時歡迎來找我聊天！不管是選課困擾、生涯規劃，還是研究所選擇，我都很樂意幫你！',
+  };
+  if (dialogMessages[target]) {
+    setTimeout(() => showChairmanDialog(dialogMessages[target]), 500);
+  }
+}
+
+// ===================== MINIMAP =====================
+function updateMinimap() {
+  const minimap = document.getElementById('minimap');
+  const viewport = document.getElementById('minimap-viewport');
+  const mmW = minimap.offsetWidth;
+  const mmH = minimap.offsetHeight;
+  const scaleX = mmW / 4000;
+  const scaleY = mmH / 3000;
+
+  // Viewport rect
+  const vw = window.innerWidth / currentScale * scaleX;
+  const vh = window.innerHeight / currentScale * scaleY;
+  const vx = -worldX / currentScale * scaleX;
+  const vy = -worldY / currentScale * scaleY;
+
+  viewport.style.left = Math.max(0, vx) + 'px';
+  viewport.style.top = Math.max(0, vy) + 'px';
+  viewport.style.width = Math.min(vw, mmW) + 'px';
+  viewport.style.height = Math.min(vh, mmH) + 'px';
+
+  // Clear old dots
+  minimap.querySelectorAll('.minimap-dot').forEach(d => d.remove());
+
+  // Add island dots
+  Object.values(islandData).forEach(island => {
+    const dot = document.createElement('div');
+    dot.className = 'minimap-dot';
+    dot.style.left = (island.x + 130) * scaleX + 'px';
+    dot.style.top = (island.y + 120) * scaleY + 'px';
+    dot.style.background = island.color;
+    minimap.appendChild(dot);
+  });
+}
+
+// ===================== DAY/NIGHT =====================
+function toggleDayNight() {
+  isNight = !isNight;
+  const ocean = document.getElementById('ocean');
+  const icon = document.getElementById('dn-icon');
+  const text = document.getElementById('dn-text');
+
+  if (isNight) {
+    ocean.style.background = 'linear-gradient(180deg, #0a1e3d 0%, #0f2847 30%, #1a4a7a 70%, #2196f3 100%)';
+    icon.textContent = '🌙';
+    text.textContent = '夜景模式';
+    document.querySelectorAll('.star').forEach(s => s.style.display = 'block');
+  } else {
+    ocean.style.background = 'linear-gradient(180deg, #87ceeb 0%, #4fc3f7 30%, #29b6f6 70%, #0288d1 100%)';
+    icon.textContent = '☀️';
+    text.textContent = '日景模式';
+    document.querySelectorAll('.star').forEach(s => s.style.display = 'none');
+  }
+}
+
+// Resize handler
+window.addEventListener('resize', () => updateMinimap());
+
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+  const step = 100;
+  switch(e.key) {
+    case 'ArrowLeft': worldX += step; break;
+    case 'ArrowRight': worldX -= step; break;
+    case 'ArrowUp': worldY += step; break;
+    case 'ArrowDown': worldY -= step; break;
+    case 'Escape': closePanel(); closeDialog(); break;
+    default: return;
+  }
+  updateWorld();
+  updateMinimap();
+});
+</script>
+</body>
+</html>
